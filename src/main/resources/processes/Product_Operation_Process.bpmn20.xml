@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:flowable="http://flowable.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.flowable.org/processdef" exporter="Flowable Open Source Modeler" exporterVersion="6.8.0">
+  <process id="productOperationProcess" name="Product Operation Process" isExecutable="true">
+    <startEvent id="startEvent" name="Start" flowable:formFieldValidation="true"></startEvent>
+    <sequenceFlow id="flow1" sourceRef="startEvent" targetRef="productOperationTask"></sequenceFlow>
+    <userTask id="productOperationTask" name="Product Operation" flowable:formFieldValidation="true">
+      <extensionElements>
+        <flowable:formProperty id="provider_id" name="Provider ID" type="string" required="true"></flowable:formProperty>
+        <flowable:formProperty id="products" name="Products" type="string" required="true"></flowable:formProperty>
+      </extensionElements>
+    </userTask>
+    <sequenceFlow id="flow2" sourceRef="productOperationTask" targetRef="validateProviderTask"></sequenceFlow>
+    <serviceTask id="validateProviderTask" name="Validating Provider" flowable:delegateExpression="${providerDelegator}"></serviceTask>
+    <sequenceFlow id="flow3" sourceRef="validateProviderTask" targetRef="providerValidationGateway"></sequenceFlow>
+    <exclusiveGateway id="providerValidationGateway" name="Is Valid Provider?"></exclusiveGateway>
+    <sequenceFlow id="validProviderFlow" sourceRef="providerValidationGateway" targetRef="performOperationTask"></sequenceFlow>
+    <sequenceFlow id="notValidProviderFlow" sourceRef="providerValidationGateway" targetRef="endEvent"></sequenceFlow>
+    <serviceTask id="performOperationTask" name="Perform Operation" flowable:delegateExpression="${operationDelegator}">
+      <extensionElements>
+        <flowable:field name="operationType">
+          <flowable:expression><![CDATA[${httpMethod}]]></flowable:expression>
+        </flowable:field>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="flow4" sourceRef="performOperationTask" targetRef="operationResultGateway"></sequenceFlow>
+    <exclusiveGateway id="operationResultGateway" name="Operation Result"></exclusiveGateway>
+    <sequenceFlow id="operationSuccessFlow" sourceRef="operationResultGateway" targetRef="sendSuccessMailTask"></sequenceFlow>
+    <sequenceFlow id="operationFailedFlow" sourceRef="operationResultGateway" targetRef="endEvent"></sequenceFlow>
+    <serviceTask id="sendSuccessMailTask" name="Mail Transaction Details" flowable:class="com.example.MailService">
+      <extensionElements>
+        <flowable:field name="providerEmail">
+          <flowable:expression><![CDATA[${providerEmail}]]></flowable:expression>
+        </flowable:field>
+      </extensionElements>
+    </serviceTask>
+    <sequenceFlow id="mailSuccessFlow" sourceRef="sendSuccessMailTask" targetRef="endEvent"></sequenceFlow>
+    <endEvent id="endEvent" name="End"></endEvent>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_productOperationProcess">
+    <bpmndi:BPMNPlane bpmnElement="productOperationProcess" id="BPMNPlane_productOperationProcess">
+      <bpmndi:BPMNShape bpmnElement="startEvent" id="BPMNShape_startEvent">
+        <omgdc:Bounds height="30.0" width="30.0" x="0.0" y="109.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="productOperationTask" id="BPMNShape_productOperationTask">
+        <omgdc:Bounds height="60.0" width="100.0" x="80.0" y="94.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="validateProviderTask" id="BPMNShape_validateProviderTask">
+        <omgdc:Bounds height="59.999999999999986" width="100.0" x="229.99999657273298" y="93.99999859929086"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="providerValidationGateway" id="BPMNShape_providerValidationGateway">
+        <omgdc:Bounds height="40.0" width="40.0" x="379.9999830126767" y="103.99999845027924"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="performOperationTask" id="BPMNShape_performOperationTask">
+        <omgdc:Bounds height="60.0" width="100.0" x="469.99999299645435" y="179.999997317791"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="operationResultGateway" id="BPMNShape_operationResultGateway">
+        <omgdc:Bounds height="40.0" width="40.0" x="619.9999907612802" y="159.99999761581424"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="sendSuccessMailTask" id="BPMNShape_sendSuccessMailTask">
+        <omgdc:Bounds height="60.0" width="100.0" x="749.9999888241292" y="224.9999966472388"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endEvent" id="BPMNShape_endEvent">
+        <omgdc:Bounds height="28.0" width="28.0" x="860.0" y="85.0"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="operationFailedFlow" id="BPMNEdge_operationFailedFlow" flowable:sourceDockerX="20.0" flowable:sourceDockerY="20.0" flowable:targetDockerX="14.0" flowable:targetDockerY="14.0">
+        <omgdi:waypoint x="659.9189160038593" y="179.99999761581424"></omgdi:waypoint>
+        <omgdi:waypoint x="672.0" y="179.99999761581424"></omgdi:waypoint>
+        <omgdi:waypoint x="672.0" y="100.0"></omgdi:waypoint>
+        <omgdi:waypoint x="860.0001650779651" y="99.06905875433249"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1" flowable:sourceDockerX="15.0" flowable:sourceDockerY="15.0" flowable:targetDockerX="50.0" flowable:targetDockerY="30.0">
+        <omgdi:waypoint x="29.949998618355412" y="124.0"></omgdi:waypoint>
+        <omgdi:waypoint x="79.99999999995788" y="124.0"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2" flowable:sourceDockerX="50.0" flowable:sourceDockerY="30.0" flowable:targetDockerX="50.0" flowable:targetDockerY="29.999999999999993">
+        <omgdi:waypoint x="179.94999893176748" y="123.99999953309694"></omgdi:waypoint>
+        <omgdi:waypoint x="229.99999657271883" y="123.999999065727"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="notValidProviderFlow" id="BPMNEdge_notValidProviderFlow" flowable:sourceDockerX="20.0" flowable:sourceDockerY="20.0" flowable:targetDockerX="14.0" flowable:targetDockerY="14.0">
+        <omgdi:waypoint x="419.9189082627663" y="123.99999845027924"></omgdi:waypoint>
+        <omgdi:waypoint x="432.0" y="123.99999845027924"></omgdi:waypoint>
+        <omgdi:waypoint x="432.0" y="100.0"></omgdi:waypoint>
+        <omgdi:waypoint x="860.0000313808218" y="99.03156116427931"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3" flowable:sourceDockerX="50.0" flowable:sourceDockerY="29.999999999999993" flowable:targetDockerX="20.0" flowable:targetDockerY="20.0">
+        <omgdi:waypoint x="329.94998406190524" y="123.99999853720269"></omgdi:waypoint>
+        <omgdi:waypoint x="379.9999830375119" y="123.99999847505242"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="mailSuccessFlow" id="BPMNEdge_mailSuccessFlow" flowable:sourceDockerX="50.0" flowable:sourceDockerY="30.0" flowable:targetDockerX="14.0" flowable:targetDockerY="14.0">
+        <omgdi:waypoint x="849.9499888241292" y="254.9999966472388"></omgdi:waypoint>
+        <omgdi:waypoint x="874.0" y="254.9999966472388"></omgdi:waypoint>
+        <omgdi:waypoint x="874.0" y="112.94992723257623"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow4" id="BPMNEdge_flow4" flowable:sourceDockerX="50.0" flowable:sourceDockerY="30.0" flowable:targetDockerX="20.0" flowable:targetDockerY="20.0">
+        <omgdi:waypoint x="569.9499929964538" y="208.5994383910309"></omgdi:waypoint>
+        <omgdi:waypoint x="591.3999633789062" y="208.0"></omgdi:waypoint>
+        <omgdi:waypoint x="591.3999633789062" y="179.99999761581424"></omgdi:waypoint>
+        <omgdi:waypoint x="619.9999907612802" y="179.99999761581424"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="operationSuccessFlow" id="BPMNEdge_operationSuccessFlow" flowable:sourceDockerX="20.0" flowable:sourceDockerY="20.0" flowable:targetDockerX="50.0" flowable:targetDockerY="30.0">
+        <omgdi:waypoint x="659.9189160038593" y="179.99999761581424"></omgdi:waypoint>
+        <omgdi:waypoint x="672.0" y="179.99999761581424"></omgdi:waypoint>
+        <omgdi:waypoint x="672.0" y="254.9999966472388"></omgdi:waypoint>
+        <omgdi:waypoint x="749.9999888241292" y="254.9999966472388"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="validProviderFlow" id="BPMNEdge_validProviderFlow" flowable:sourceDockerX="20.0" flowable:sourceDockerY="20.0" flowable:targetDockerX="50.0" flowable:targetDockerY="30.0">
+        <omgdi:waypoint x="419.9189082627663" y="123.99999845027924"></omgdi:waypoint>
+        <omgdi:waypoint x="432.0" y="123.99999845027924"></omgdi:waypoint>
+        <omgdi:waypoint x="432.0" y="209.999997317791"></omgdi:waypoint>
+        <omgdi:waypoint x="469.99999299645435" y="209.999997317791"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

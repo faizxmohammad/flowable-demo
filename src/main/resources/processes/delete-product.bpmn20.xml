@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL
+                    http://www.omg.org/spec/BPMN/2.0/20100501/BPMN20.xsd"
+             targetNamespace="http://flowable.org/bpmn20">
+
+    <process id="delete-product-process" name="Delete product">
+
+        <startEvent id="start-delete-product" name="Start"/>
+        <sequenceFlow id="flow1" sourceRef="start-delete-product" targetRef="checkProvider"/>
+        <serviceTask id="checkProvider" name="Check provider validity"
+                     flowable:delegateExpression="${providerCheckDelegate}"/>
+
+        <sequenceFlow id="flow2" sourceRef="checkProvider" targetRef="deleteProduct"/>
+        <serviceTask id="deleteProduct" name="Delete product"
+                     flowable:delegateExpression="${deleteProductDelegate}"/>
+
+
+        <sequenceFlow id="flow3" sourceRef="deleteProduct" targetRef="end-delete-product"/>
+        <endEvent id="end-delete-product" name="End"/>
+
+    </process>
+
+
+
+</definitions>

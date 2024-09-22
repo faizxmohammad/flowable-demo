@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL
+                    http://www.omg.org/spec/BPMN/2.0/20100501/BPMN20.xsd"
+             targetNamespace="http://flowable.org/bpmn20">
+
+    <process id="product-management-process" name="Product Operation Process">
+        <!-- Start Event -->
+        <startEvent id="start-process" name="Start" />
+
+        <!-- Sequence Flow from Start to User Task -->
+<!--        <sequenceFlow id="flow1" sourceRef="start-process" targetRef="productOperationTask"/>-->
+
+<!--        &lt;!&ndash; User Task for Product Operation &ndash;&gt;-->
+<!--        <userTask id="productOperationTask" name="Enter Product Information"-->
+<!--                  flowable:delegateExpression="${demoDelegator}">-->
+<!--        </userTask>-->
+
+        <!-- Sequence Flow from User Task to Service Task -->
+        <sequenceFlow id="flow2" sourceRef="start-process" targetRef="validateProviderTask"/>
+
+        <!-- Service Task for Validating Provider -->
+        <serviceTask id="validateProviderTask" name="Validating Provider" flowable:delegateExpression="${providerDelegator}"/>
+
+        <!-- Sequence Flow from Service Task to Gateway -->
+        <sequenceFlow id="flow3" sourceRef="validateProviderTask" targetRef="providerValidationGateway"/>
+
+        <!-- Exclusive Gateway for Provider Validation -->
+        <exclusiveGateway id="providerValidationGateway" name="Is Valid Provider?"/>
+
+        <!-- Sequence Flow: Provider Valid -->
+        <sequenceFlow id="validProviderFlow" sourceRef="providerValidationGateway" targetRef="performOperationTask">
+            <conditionExpression xsi:type="tFormalExpression">${isValidProvider == true}</conditionExpression>
+        </sequenceFlow>
+
+        <!-- Sequence Flow: Provider Not Valid -->
+        <sequenceFlow id="notValidProviderFlow" sourceRef="providerValidationGateway" targetRef="end-process">
+            <conditionExpression xsi:type="tFormalExpression">${isValidProvider == false}</conditionExpression>
+        </sequenceFlow>
+
+        <!-- Service Task for Performing Operation -->
+        <serviceTask id="performOperationTask" name="Perform Operation"
+                     flowable:delegateExpression="${productDelegator}">
+            <extensionElements>
+                <flowable:field name="operationType">
+                    <flowable:expression>${httpMethod}</flowable:expression>
+                </flowable:field>
+            </extensionElements>
+        </serviceTask>
+
+
+        <!-- Sequence Flow from Perform Operation to Gateway -->
+        <sequenceFlow id="flow4" sourceRef="performOperationTask" targetRef="operationResultGateway"/>
+
+        <!-- Exclusive Gateway for Operation Success/Failure -->
+        <exclusiveGateway id="operationResultGateway" name="Operation Result"/>
+
+
+<!--        <sequenceFlow id="operationFailedFlow" sourceRef="operationResultGateway" targetRef="end-process" flowable:expression="${!operationSuccess}">-->
+<!--            <conditionExpression xsi:type="tFormalExpression">${operationSuccess == false}</conditionExpression>-->
+<!--        </sequenceFlow>-->
+
+        <!-- Sequence Flow: Operation Failed -->
+        <sequenceFlow id="operationFailedFlow" sourceRef="operationResultGateway" targetRef="end-process" flowable:expression="${!operationSuccess}">
+            <conditionExpression xsi:type="tFormalExpression">${operationSuccess == false}</conditionExpression>
+        </sequenceFlow>
+
+
+        <!-- Sequence Flow: Operation Success -->
+        <sequenceFlow id="operationSuccessFlow" sourceRef="operationResultGateway" targetRef="performSubTasksFlow" >
+            <conditionExpression xsi:type="tFormalExpression">${operationSuccess == true}</conditionExpression>
+        </sequenceFlow>
+
+        <!-- Perform parallel tasks after operation is success -->
+        <parallelGateway name="performSubTasks" id="performSubTasksFlow"/>
+
+        <sequenceFlow id="performMailFLow" sourceRef="performSubTasksFlow" targetRef="sendSuccessMailTask">
+            <conditionExpression xsi:type="tFormalExpression">${operationSuccess == true}</conditionExpression>
+        </sequenceFlow>
+
+        <sequenceFlow id="inventoryFlow" sourceRef="performSubTasksFlow" targetRef="inventoryTask">
+            <conditionExpression xsi:type="tFormalExpression">${operationSuccess == true}</conditionExpression>
+        </sequenceFlow>
+
+        <sequenceFlow id="smsFlow" sourceRef="performSubTasksFlow" targetRef="smsTask">
+            <conditionExpression xsi:type="tFormalExpression">${operationSuccess == true}</conditionExpression>
+        </sequenceFlow>
+
+
+        <!-- Service Task for Sending Success Mail -->
+        <serviceTask id="sendSuccessMailTask" name="Mail-Transaction-Details"  flowable:delegateExpression="${mailDelegator}">
+            <extensionElements>
+                <flowable:field name="to">
+                    <flowable:expression>${providerEmail}</flowable:expression>
+                </flowable:field>
+                <flowable:field name="from">
+                    <flowable:expression>${from}</flowable:expression>
+                </flowable:field>
+                <flowable:field name="text">
+                    <flowable:expression>${text}</flowable:expression>
+                </flowable:field>
+                <flowable:field name="html">
+                    <flowable:expression>${html}</flowable:expression>
+                </flowable:field>
+            </extensionElements>
+        </serviceTask>
+
+        <serviceTask id="inventoryTask" name="Add product to Inventory" flowable:delegateExpression="${inventoryDelegator}">
+            <extensionElements>
+                <flowable:field name="inventoryName">
+                    <flowable:expression>${inventoryName}</flowable:expression>
+                </flowable:field>
+            </extensionElements>
+        </serviceTask>
+
+        <serviceTask id="smsTask" name="Send SMS to provider" flowable:delegateExpression="${smsDelegator}">
+            <extensionElements>
+                <flowable:field name="phoneNo">
+                    <flowable:expression>${phoneNo}</flowable:expression>
+                </flowable:field>
+            </extensionElements>
+        </serviceTask>
+
+
+        <!-- Sequence Flow: Send Mail Success -->
+        <sequenceFlow id="mailSuccessFlow" sourceRef="sendSuccessMailTask" targetRef="endSubTasksGateway"/>
+
+        <sequenceFlow id="updateInventory" sourceRef="inventoryTask" targetRef="endSubTasksGateway"/>
+
+        <sequenceFlow id="smsSuccessFlow" sourceRef="smsTask" targetRef="endSubTasksGateway"/>
+
+
+        <parallelGateway id="endSubTasksGateway" name="end subTasks"/> <!-- for synchronisation -->
+        <sequenceFlow sourceRef="endSubTasksGateway" targetRef="end-process"/>
+
+
+        <!-- End Event -->
+        <endEvent id="end-process" name="End">
+            <terminateEventDefinition />
+        </endEvent>
+
+    </process>
+</definitions>

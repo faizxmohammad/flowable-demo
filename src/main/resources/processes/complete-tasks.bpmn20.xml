@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:flowable="http://flowable.org/bpmn"
+             xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL
+                    http://www.omg.org/spec/BPMN/2.0/20100501/BPMN20.xsd"
+             targetNamespace="http://flowable.org/bpmn20">
+
+    <process id="complete-process" name="Complete a task">
+        <startEvent id="start-task-completion-process" name="Start" />
+        <sequenceFlow id="flow1" sourceRef="start-task-completion-process" targetRef="completeTask"/>
+        <serviceTask id="completeTask" name="complete task"
+                     flowable:delegateExpression="${completeTaskDelegator}"/>
+        <sequenceFlow id="flow2" sourceRef="completeTask" targetRef="end-task-completion-process"/>
+        <endEvent id="end-task-completion-process" name="End" />
+
+    </process>
+
+</definitions>
